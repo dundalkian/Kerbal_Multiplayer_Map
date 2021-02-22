@@ -10,6 +10,7 @@ var secondsSinceEpoch
 var ReferenceBody
 
 var currentTime
+
 // GUI variables
 var gui
 var showVessels = true
@@ -33,14 +34,13 @@ function setup() {
     angleMode(DEGREES)
     G = 6.67430*pow(10,-11)
     createPlanets()
-    //createShipsAndObjects()
     ReferenceBody = sun
-    // and on the seventh day...
     tmp = new Date( State[0].CurrentState.StartTime)
     now = new Date()
     currentTime = abs(now.getTime() - tmp.getTime())/1000 + secondsSinceEpoch + (5*3600)
     createShipsAndObjects()
     initGUI()
+    // and on the seventh day...
 }
 
 function windowResized() {
@@ -53,15 +53,12 @@ function draw() {
     background(0, 10, 40);
     sun.display()
     lights()
-    //orbitControl()
     //debugMode()
     if (showPlanets) { 
-        //console.log(ReferenceBody)
         plotOrbits(ReferenceBody.orbiters)
     }
     if (showVessels) { plotOrbits(ReferenceBody.ships) }
     if (showObjects) { plotOrbits(ReferenceBody.objects) }
-    //displayHUD()
 
 }
 
@@ -132,9 +129,12 @@ class Orbiter {
             //return sphere(.00005*this.radius)
             //My conv has a *2 term rather than a /2 term, this is wrong so multiply by 4 here to 
             //balance? actually that sounds wrong but idk, this works^tm
+            //
+            //We need the conversion term here though because central bodies can have vessels on their
+            //surface, so the radius needs to be scaled correctly such that objects on surface will render
+            //correctly in this visualizer
             return sphere(4*this.radius*this.conv)
         }
-        //tateZ(-45)
         return ellipse(this.ellx, this.elly, this.width, this.height, 50);
     }
 
@@ -142,29 +142,21 @@ class Orbiter {
         fill(this.r,this.g,this.b)
         noStroke()
         if (this.parent != -1) {
-            //this.MA = sqrt(this.mu/pow(this.a,3))*(278450-0)
             if (this.mass == 0){
                 this.T = 2*PI*sqrt(pow(this.a,3)/(G*this.parent.mass))
             }
             else {
                 this.T = 2*PI*sqrt(pow(this.a,3)/(G*(this.parent.mass+this.mass)))
             }
-            //console.log(this.T)
             //If a ship/comet/debris/object
             if (this.mass == 0) {
-                //console.log(this.ma)
                 this.MA = degrees(this.ma)
             }
             else {
                 this.MA = degrees(this.ma) + (360/this.T)*(currentTime-0)
             }
-            
-            //console.log(secondsSinceEpoch)
-            //this.MA = degrees(this.ma) + (180/PI)*sqrt(this.mu/pow(this.a,3))*(500000*millis()-0)
-            //console.log(this.MA)
             this.approx_EA() //sets value of this.EA
             this.nu = -2*atan2(sqrt(1-this.e)*cos(this.EA/2), sqrt(1+this.e)*sin(this.EA/2))
-            //onsole.log(this.nu)
             this.r = this.a*(1-this.e*cos(this.EA))
             this.h = sqrt(this.mu*this.a*(1-pow(this.e,2)))
 
@@ -173,18 +165,18 @@ class Orbiter {
             this.y = this.r*((cos(this.loan)*cos(this.aop+this.nu)) - sin(this.loan)*sin(this.aop+this.nu)*cos(this.i))
             this.x = this.r*((sin(this.loan)*cos(this.aop+this.nu)) + cos(this.loan)*sin(this.aop+this.nu)*cos(this.i))
             this.z = -this.r*(sin(this.i)*sin(this.aop+this.nu))
-            //console.log(this.z)
         }
         translate(this.x*this.conv,this.y*this.conv,this.z*this.conv)
-        let size = .00005*this.radius//*this.conv
+        //we don't add the conversion term here because moons become super small in small systems like Kerbin
+        //there is probably a better way to dynamically scale, but this produces decent results
+        let size = .00005*this.radius
         if (size < 3) { size = 3 }
         return sphere(size)
-        //return sphere(50)
     }
 }
 
 function initGUI() {
-    gui = createGui('P5 GUI')
+    gui = createGui("Reference Body: " + ReferenceBody.name)
     currOrbiterMap = ReferenceBody.orbitersMap
     currOrbiterMapStatic = ReferenceBody.orbitersMap
     gui.addGlobals('currOrbiterMap')
@@ -205,22 +197,18 @@ function initGUI() {
         }
     })
     gui.addButton("Show/Hide Vessels", function() {
-        //createShipsAndObjects(vessels)
         showVessels = !showVessels
     })
     gui.addButton("Show/Hide Planets", function() {
-        //createShipsAndObjects(vessels)
         showPlanets = !showPlanets
     })
     gui.addButton("Show/Hide Asteroids/Comets", function() {
-        //createShipsAndObjects(vessels)
         showObjects = !showObjects
     })
 }
 
 function plotOrbits(orbiters) {
     for (var orbiter of orbiters) {
-        //planet.orbit(sun);
         push()
         angleMode(DEGREES)
         rotateZ(90)
@@ -238,8 +226,6 @@ function plotOrbits(orbiters) {
         if (this.parent != -1) {
             push()
             angleMode(DEGREES)
-            //console.log("bruh")
-            //rotateZ(-90)
             if (orbiter.mass == 0) {
                 orbiter.r = 0
                 orbiter.g = 255
@@ -270,10 +256,7 @@ function createPlanets() {
     pol = new Orbiter(179890000, 0.171, 4.25, 15, 2, 0.9, 0, 1042138.9, 44000, 7.22*pow(10,8), 1.081*pow(10,19), jool, "pol")
     dres = new Orbiter(40839348203, 0.145, 5, 90, 280, 3.14, 0, 32832840, 138000, 2.15*pow(10,10), 3.219*pow(10,20), sun, "dres")
     eeloo = new Orbiter(90118820000, 0.26, 6.15, 260, 50, 3.14, 0, 1.191*pow(10,8), 210000, 7.44*pow(10,10), 1.115*pow(10,21), sun, "eeloo")
-    
-    
-    
-    //omv = new Orbiter(53875960570, 0.7, 45, 90, 90, radians(.28226), 0, 0, sun)
+
     planets[0] = sun
     planets[1] = kerbin
     planets[2] = mun
@@ -316,13 +299,11 @@ function createShipsAndObjects() {
     }
 
     for (let s of ships) {
-        //console.log(s)
         if (s.parent != -1) {
             s.parent.ships[s.parent.ships.length] = s
         }
     }
     for (let s of objects) {
-        //console.log(s)
         if (s.parent != -1) {
             s.parent.objects[s.parent.objects.length] = s
         }
