@@ -19,9 +19,14 @@ var showObjects = false
 var currOrbiterMap
 var currOrbiterMapStatic
 
+//3D model variables
+var rocketModel
+
 function preload() {
     let url = 'https://larrysteele.space:8900/http://gregswebserver.com:8900'
     State = loadJSON(url)
+    rocketModel = loadModel('rock.obj', true)
+    texture_duna = loadImage('textures/duna.png')
 }
 
 function setup() {
@@ -52,7 +57,12 @@ function windowResized() {
 function draw() {
     background(0, 10, 40);
     sun.display()
-    lights()
+    
+    //smooth() cant really tell what this is doing
+    //lightFalloff(0,0,(4*PI)/10000000) This would be physically correct, save finding the correct power term, but produces poor results
+    lightFalloff(0,.001,0) // short, simple, produces decent results
+    ambientLight(10, 10, 10);
+    pointLight(255,255,255,0,0,0)
     //debugMode()
     if (showPlanets) { 
         plotOrbits(ReferenceBody.orbiters)
@@ -171,7 +181,18 @@ class Orbiter {
         //there is probably a better way to dynamically scale, but this produces decent results
         let size = .00005*this.radius
         if (size < 3) { size = 3 }
-        return sphere(size)
+        //scale(0.2)
+        normalMaterial()
+        //push()
+        rotateX(90)
+        rotateY(frameCount*-1)
+
+        //model(rocketModel)
+        texture(texture_duna)
+        sphere(size)
+        //pop()
+        return
+        //return sphere(size)
     }
 }
 
